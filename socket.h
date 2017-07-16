@@ -6,6 +6,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <cerrno>
+#include <cstring>
+#include <exception>
 
 #define domain AF_INET
 #define type SOCK_DGRAM
@@ -21,8 +24,6 @@ const std::string MESSAGE_DEFAULT_TEXT = "Hi!";
 struct Message
 {
     char text[MESSAGE_SIZE];
-    char sender_name[80];
-    char send_date[80];
 };
 
 class Socket

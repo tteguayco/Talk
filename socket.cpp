@@ -5,8 +5,20 @@ Socket::Socket(const sockaddr_in &address)
     // Create socket
     fd_ = socket(domain, type, protocol);
 
+    if (fd_ < 0)
+    {
+        throw std::system_error(errno, std::system_category(),
+            "unable to create socket");
+    }
+
     // Assign socket to address
-    bind(fd_, (const sockaddr*) &address, sizeof(address));
+    int result = bind(fd_, (const sockaddr*) &address, sizeof(address));
+
+    if (result < 0)
+    {
+        throw std::system_error(errno, std::system_category(),
+            "unable to bind socket to address");
+    }
 }
 
 Socket::~Socket()
@@ -22,7 +34,8 @@ void Socket::send_to(const Message &message, const sockaddr_in &address)
 
     if (result < 0)
     {
-        std::cerr << "sento() failed: \n";
+        throw std::system_error(errno, std::system_category(),
+            "call to sento() function failed");
     }
 }
 
@@ -35,7 +48,8 @@ void Socket::receive_from(Message &message, sockaddr_in &address)
 
     if (result < 0)
     {
-        std::cerr << "recvfrom failed: \n";
+        throw std::system_error(errno, std::system_category(),
+            "call to recvfrom() function failed");
     }
 
     // Print message
