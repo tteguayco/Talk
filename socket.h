@@ -9,6 +9,7 @@
 #include <cerrno>
 #include <cstring>
 #include <exception>
+#include <atomic>
 
 #define domain AF_INET
 #define type SOCK_DGRAM
@@ -18,8 +19,6 @@
 #define BIND_FAILED 3
 
 #define MESSAGE_SIZE 1024
-
-const std::string MESSAGE_DEFAULT_TEXT = "Hi!";
 
 struct Message
 {
@@ -34,8 +33,8 @@ private:
 public:
     Socket(const sockaddr_in& address);
     ~Socket();
-    void send_to(const Message& message, const sockaddr_in& address);
-    void receive_from(Message& message, sockaddr_in& address);
+    void send_to(const sockaddr_in& address, std::atomic_bool& quit);
+    void receive_from(sockaddr_in& address, std::atomic_bool& quit);
 };
 
 #endif // SOCKET_H

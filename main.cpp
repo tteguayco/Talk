@@ -1,6 +1,9 @@
 #include <iostream>
 #include <cstring>
 #include <sstream>
+#include <thread>
+#include <pthread.h>
+#include <atomic>
 #include "socket.h"
 
 #define BAD_ALLOW_ERROR 1
@@ -31,28 +34,40 @@ sockaddr_in make_ip_address(const std::string& ip_address, int port)
     return local_address;
 }
 
+void request_cancellation(std::thread& thread)
+{
+    int result = pthread_cancel(thread.native_handle());
+
+    if (result != 0)
+    {
+        throw std::system_error(result, std::system_category(),
+            "cancellation request for a thread failed");
+    }
+}
+
 int main(int argc, char *argv[])
 {
+    std::cout << "** TALK **\n";
+    std::cout << "Your credentials:\n";
+    std::cout << "\n";
+
     try
     {
-        sockaddr_in local_address = make_ip_address("127.0.0.1", 3001);
-        sockaddr_in remote_address = make_ip_address("127.0.0.1", 3000);
-        Socket local_socket(local_address);
+        sockaddr_in local_address = make_ip_address("127.0.0.1", 8001);
+        sockaddr_in remote_address = make_ip_address("127.0.0.1", 8000);
+        Socket socket(local_address);
 
-        std::string line;
-        Message message;
+        std::atomic_bool quit(false);
 
-        while (!std::cin.eof())
-        {
-            std::cout << "> ";
-            std::getline(std::cin, line);
+        // Run threads to send and receive messages
+        std::thread send_thread(&Socket::send_to, socket,
+            std::ref(remote_address), std::ref(quit));
+        std::thread receive_thread(&Socket::receive_from, socket,
+            std::ref(remote_address), std::ref(quit));
 
-            if (line == "/quit") break;
-
-            line.copy(message.text, sizeof(message.text) - 1, 0);
-            local_socket.send_to(message, remote_address);
-            local_socket.receive_from(message, remote_address);
-        }
+        // Wait for the threads to finish safely
+        send_thread.join();
+        receive_thread.join();
     }
 
     catch (std::bad_alloc& e)

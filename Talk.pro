@@ -8,3 +8,5 @@ SOURCES += main.cpp \
 
 HEADERS += \
     socket.h
+
+unix:!macx: LIBS += -lpthread-2.23
