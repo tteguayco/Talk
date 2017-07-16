@@ -14,6 +14,17 @@
 #define SOCKET_CREATION_FAILED 2
 #define BIND_FAILED 3
 
+#define MESSAGE_SIZE 1024
+
+const std::string MESSAGE_DEFAULT_TEXT = "Hi!";
+
+struct Message
+{
+    char text[MESSAGE_SIZE];
+    char sender_name[80];
+    char send_date[80];
+};
+
 class Socket
 {
 private:
@@ -22,7 +33,8 @@ private:
 public:
     Socket(const sockaddr_in& address);
     ~Socket();
-    bool socket_valid();
+    void send_to(const Message& message, const sockaddr_in& address);
+    void receive_from(Message& message, sockaddr_in& address);
 };
 
 #endif // SOCKET_H

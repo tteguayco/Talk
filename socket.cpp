@@ -14,12 +14,14 @@ Socket::~Socket()
     close(fd_);
 }
 
-bool Socket::socket_valid()
+void Socket::send_to(const Message &message, const sockaddr_in &address)
 {
-    if (fd_ >= 0)
-    {
-        return true;
-    }
+    // Send message through socket
+    int result = sendto(fd_, &message, sizeof(message), 0,
+        (const sockaddr*) &address, sizeof(address));
 
-    return false;
+    if (result < 0)
+    {
+        std::cerr << "sento() failed: \n";
+    }
 }
