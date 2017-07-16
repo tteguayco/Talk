@@ -25,3 +25,23 @@ void Socket::send_to(const Message &message, const sockaddr_in &address)
         std::cerr << "sento() failed: \n";
     }
 }
+
+void Socket::receive_from(Message &message, sockaddr_in &address)
+{
+    socklen_t src_len = sizeof(address);
+
+    int result = recvfrom(fd_, &message, sizeof(message), 0,
+        (sockaddr*) &address, &src_len);
+
+    if (result < 0)
+    {
+        std::cerr << "recvfrom failed: \n";
+    }
+
+    // Print message
+    char* remote_ip = inet_ntoa(address.sin_addr);
+    int remote_port = ntohs(address.sin_port);
+
+    std::cout << "[" << remote_ip << ":" << remote_port << "] says: "
+        << message.text << "\n";
+}

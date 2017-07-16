@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <sstream>
 #include "socket.h"
 
 sockaddr_in make_ip_address(const std::string& ip_address, int port)
@@ -28,6 +29,24 @@ sockaddr_in make_ip_address(const std::string& ip_address, int port)
 
 int main(int argc, char *argv[])
 {
-    std::cout << "Program running\n";
+    sockaddr_in local_address = make_ip_address("127.0.0.1", 3001);
+    Socket local_socket(local_address);
+    sockaddr_in remote_address = make_ip_address("127.0.0.1", 3000);
+
+    std::string line;
+    Message message;
+
+    while (!std::cin.eof())
+    {
+        std::cout << "> ";
+        std::getline(std::cin, line);
+
+        if (line == "/quit") break;
+
+        line.copy(message.text, sizeof(message.text) - 1, 0);
+        local_socket.send_to(message, remote_address);
+        local_socket.receive_from(message, remote_address);
+    }
+
     return 0;
 }
