@@ -53,9 +53,6 @@ void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit)
             throw std::system_error(errno, std::system_category(),
                 "call to sento() function failed");
         }
-
-        // Print message
-        std::cout << "You: " << message.text << "\n";
     }
 }
 
@@ -81,7 +78,7 @@ void Socket::receive_from(sockaddr_in& address,std::atomic_bool& quit)
         remote_port = ntohs(address.sin_port);
 
         // Print message
-        std::cout << "[" << remote_ip << ":" << remote_port << "] says: "
+        std::cout << " [" << remote_ip << ":" << remote_port << "] says: "
             << message.text << "\n";
     }
 }

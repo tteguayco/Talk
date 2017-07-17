@@ -4,9 +4,11 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += main.cpp \
-    socket.cpp
+    socket.cpp \
+    client.cpp
 
 HEADERS += \
-    socket.h
+    socket.h \
+    client.h
 
 unix:!macx: LIBS += -lpthread-2.23
