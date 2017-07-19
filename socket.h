@@ -10,6 +10,9 @@
 #include <cstring>
 #include <exception>
 #include <atomic>
+#include <vector>
+#include <utility>
+#include <algorithm>
 
 #define domain AF_INET
 #define type SOCK_DGRAM
@@ -33,8 +36,11 @@ private:
 public:
     Socket(const sockaddr_in& address);
     ~Socket();
-    void send_to(const sockaddr_in& address, std::atomic_bool& quit);
-    void receive_from(sockaddr_in& address, std::atomic_bool& quit);
+    void send_to(const sockaddr_in& address, std::atomic_bool& quit,
+                std::vector<std::pair<std::string, int>>* clients_list);
+    void receive_from(sockaddr_in& address, std::atomic_bool& quit,
+                std::vector<std::pair<std::string, int>>* clients_list);
+    static sockaddr_in make_ip_address(const std::string ip_address, int port);
 };
 
 #endif // SOCKET_H

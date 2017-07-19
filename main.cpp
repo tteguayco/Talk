@@ -14,9 +14,9 @@ int main(int argc, char *argv[])
 {
     int c, option_index;
     std::string remote_server_ip;
-    int remote_server_port;
+    int remote_server_port = 0;
     bool client_mode = false, server_mode = false;
-    Client* client;
+    Client* client = NULL;
 
     const struct option long_options[] = {
         { "help",   0, 0, 0 },
@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
         { "port",   0, 0, 0 }
     };
 
-    std::cout << "** TALK **\n\n";
+    std::cout << "TALK";
 
     // Processing command line
     while ((c = getopt_long(argc, argv, CMDLINE_OPTIONS, long_options, &option_index)) != -1)
@@ -56,17 +56,17 @@ int main(int argc, char *argv[])
     {
         if (client_mode)
         {
-            client = new Client(remote_server_ip, remote_server_port);
-            client->run();
+            std::cout << " (client mode)\n\n";
+            client = new Client(remote_server_ip, remote_server_port, false);
         }
         else if (server_mode)
         {
-            // Initialize server
+            std::cout << " (server mode)\n\n";
+            client = new Client(remote_server_ip, remote_server_port, true);
         }
-        else
-        {
-            std::cout << "Unknown error establishing application mode\n";
-        }
+
+        // Let's go!
+        client->run();
     }
 
     catch (std::bad_alloc& e)

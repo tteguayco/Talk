@@ -16,14 +16,22 @@ private:
     Socket* socket_;
     std::string server_ip_address_;
     int server_port_;
+    bool is_server_;
+
+    /**
+     * @brief clients_list_
+     *
+     * Pairs ip/port of those clients which are connected
+     * to the server.
+     */
+    std::vector<std::pair<std::string, int>> clients_list_;
 
 public:
-    Client(const std::string& server_ip_address, int server_port);
+    Client(const std::string& server_ip_address, int server_port, bool is_server);
     ~Client();
     void run();
 
 private:
-    sockaddr_in make_ip_address(const std::string& ip_address, int port);
     void request_cancellation(std::thread& thread);
 };
 
