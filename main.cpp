@@ -7,8 +7,18 @@
 #define UNKNOWN_ERROR 3
 
 #define CMDLINE_OPTIONS "hsc:p:"
-
 #define SERVER_PORT 8000
+
+const std::string HELP_LINE = "\nTALK. A simple chat written in C++ based on Unix sockets.\n\n"
+    "Usage:\n"
+    "  talk (-h | --help)\n"
+    "  talk ((-c | --client) <server_port> | (-s | --server)) (-p | --port) <port_number>"
+    "\n\n"
+    "Options:\n"
+    "  -h --help      Shows this screen.\n"
+    "  -s --server    Starts with the server mode.\n"
+    "  -c --client    Starts with the client mode.\n"
+    "  -p --port      Sets the server listening port.\n\n";
 
 int main(int argc, char *argv[])
 {
@@ -17,15 +27,18 @@ int main(int argc, char *argv[])
     int remote_server_port = 0;
     bool client_mode = false, server_mode = false;
     Client* client = NULL;
+    bool start = false;
 
+    /**
+      * More info about the fields of this struct
+      * in: https://linux.die.net/man/3/getopt_long
+      */
     const struct option long_options[] = {
-        { "help",   0, 0, 0 },
-        { "client", 0, 0, 0 },
-        { "server", 0, 0, 0 },
-        { "port",   0, 0, 0 }
+        { "help",   0, 0, 'h' },
+        { "client", 1, 0, 's' },
+        { "server", 0, 0, 's' },
+        { "port",   1, 0, 'p' }
     };
-
-    std::cout << "TALK";
 
     // Processing command line
     while ((c = getopt_long(argc, argv, CMDLINE_OPTIONS, long_options, &option_index)) != -1)
@@ -33,40 +46,49 @@ int main(int argc, char *argv[])
         switch (c)
         {
             case 'h':
-                std::cout << "Usage: [...]";
+                std::cout << HELP_LINE;
                 break;
 
             case 's':
                 server_mode = true;
-
+                start = true;
                 break;
 
             case 'c':
                 client_mode = true;
                 remote_server_ip = optarg;
+                start = true;
                 break;
 
             case 'p':
                 remote_server_port = std::stoi(optarg);
+                start = true;
                 break;
         }
     }
 
     try
     {
-        if (client_mode)
+        if (start)
         {
-            std::cout << " (client mode)\n\n";
-            client = new Client(remote_server_ip, remote_server_port, false);
-        }
-        else if (server_mode)
-        {
-            std::cout << " (server mode)\n\n";
-            client = new Client(remote_server_ip, remote_server_port, true);
-        }
+            std::cout << "TALK";
+            if (client_mode)
+            {
+                std::cout << "\n\n> ";
+                client = new Client(remote_server_ip, remote_server_port, false);
+            }
+            else if (server_mode)
+            {
+                std::cout << " (server mode)\n\n> ";
+                client = new Client(remote_server_ip, remote_server_port, true);
+            }
 
-        // Let's go!
-        client->run();
+            // Let's go!
+            if (client != NULL)
+            {
+                client->run();
+            }
+        }
     }
 
     catch (std::bad_alloc& e)

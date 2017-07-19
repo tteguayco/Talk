@@ -26,6 +26,26 @@ Socket::~Socket()
     close(fd_);
 }
 
+int send_message_to_clients(int fd, const Message& message,
+                        std::vector<std::pair<std::string, int>>* clients_list)
+{
+    sockaddr_in aux_address;
+    unsigned i = 0;
+    int result = 0;
+
+    while ((i < clients_list->size()) && (result >= 0))
+    {
+        // Build address with ip address and port
+        aux_address = Socket::make_ip_address((*clients_list)[i].first,
+                                              (*clients_list)[i].second);
+        result = sendto(fd, &message, sizeof(message), 0,
+            (const sockaddr*) &aux_address, sizeof(aux_address));
+        i++;
+    }
+
+    return result;
+}
+
 void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
                      std::vector<std::pair<std::string, int>>* clients_list)
 {
@@ -35,11 +55,11 @@ void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
 
     while (!std::cin.eof())
     {
-        std::cout << "> ";
         std::getline(std::cin, line);
 
         if (line == "/quit")
         {
+            std::cout << "Cerrando sesión...\n";
             quit = true;
             break;
         }
@@ -51,17 +71,7 @@ void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
         // Send message through socket to all the clients
         if (clients_list != NULL)
         {
-            sockaddr_in aux_address;
-            int i = 0;
-            while ((i < clients_list->size()) && (result >= 0))
-            {
-                // Build address with ip address and port
-                aux_address = Socket::make_ip_address((*clients_list)[i].first,
-                                                      (*clients_list)[i].second);
-                result = sendto(fd_, &message, sizeof(message), 0,
-                    (const sockaddr*) &aux_address, sizeof(aux_address));
-                i++;
-            }
+            result = send_message_to_clients(fd_, message, clients_list);
         }
         else
         {
@@ -103,6 +113,9 @@ void Socket::receive_from(sockaddr_in& address, std::atomic_bool& quit,
         // from an unknown client; save it
         if (clients_list != NULL)
         {
+            // Send message to all the clients
+            send_message_to_clients(fd_, message, clients_list);
+
             // If that client is not added yet
             if (!std::any_of(clients_list->begin(), clients_list->end(),
                 [&remote_ip, &remote_port] (const std::pair<std::string, int>& p)
@@ -114,7 +127,7 @@ void Socket::receive_from(sockaddr_in& address, std::atomic_bool& quit,
         }
 
         // Print message
-        std::cout << " [" << remote_ip << ":" << remote_port << "] says: "
+        std::cout << "[" << remote_ip << ":" << remote_port << "] says: "
             << message.text << "\n";
     }
 }
