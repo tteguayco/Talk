@@ -33,13 +33,22 @@ int send_message_to_clients(int fd, const Message& message,
     unsigned i = 0;
     int result = 0;
 
+    std::cout << "Message's sender ip: " << message.sender_ip << '\n';
+    std::cout << "Message's sender port: " << message.sender_port << '\n';
+
     while ((i < clients_list->size()) && (result >= 0))
     {
-        // Build address with ip address and port
-        aux_address = Socket::make_ip_address((*clients_list)[i].first,
-                                              (*clients_list)[i].second);
-        result = sendto(fd, &message, sizeof(message), 0,
-            (const sockaddr*) &aux_address, sizeof(aux_address));
+        // The sender won't receive its own message
+        if ((*clients_list)[i].first != message.sender_ip ||
+                (*clients_list)[i].second != message.sender_port)
+        {
+            // Build address with ip address and port
+            aux_address = Socket::make_ip_address((*clients_list)[i].first,
+                                                  (*clients_list)[i].second);
+            result = sendto(fd, &message, sizeof(message), 0,
+                (const sockaddr*) &aux_address, sizeof(aux_address));
+        }
+
         i++;
     }
 
@@ -52,6 +61,13 @@ void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
     std::string line;
     Message message;
     int result = 0;
+    int sender_port;
+    char* sender_ip;
+
+    // Getting the local address
+    sockaddr_in local_address;
+    socklen_t len = sizeof(local_address);
+    getsockname(fd_, (struct sockaddr*) &local_address, &len);
 
     while (!std::cin.eof())
     {
@@ -66,7 +82,14 @@ void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
 
         // Clean memory for the message
         memset(message.text, '\0', sizeof(message.text));
+        //memset(message.sender_ip, '\0', sizeof(message.sender_ip));
+
+        // Set up message
+        sender_ip = inet_ntoa(local_address.sin_addr);
+        sender_port = ntohs(local_address.sin_port);
         line.copy(message.text, sizeof(message.text) - 1, 0);
+        strncpy(message.sender_ip, sender_ip, sizeof (message.sender_ip));
+        memcpy(&message.sender_port, &sender_port, sizeof(int));
 
         // Send message through socket to all the clients
         if (clients_list != NULL)
@@ -106,14 +129,17 @@ void Socket::receive_from(sockaddr_in& address, std::atomic_bool& quit,
                 "call to recvfrom() function failed");
         }
 
-        remote_ip = inet_ntoa(address.sin_addr);
-        remote_port = ntohs(address.sin_port);
-
         // If we are the server and we have receive a message
-        // from an unknown client; save it
         if (clients_list != NULL)
         {
-            // Send message to all the clients
+            remote_ip = inet_ntoa(address.sin_addr);
+            remote_port = ntohs(address.sin_port);
+
+            // Save ip address and port of the sender in the message struct
+            strncpy(message.sender_ip, remote_ip, sizeof (message.sender_ip));
+            memcpy(&message.sender_port, &remote_port, sizeof(int));
+
+            // Send message to all the clients, but the original sender
             send_message_to_clients(fd_, message, clients_list);
 
             // If that client is not added yet
@@ -127,7 +153,7 @@ void Socket::receive_from(sockaddr_in& address, std::atomic_bool& quit,
         }
 
         // Print message
-        std::cout << "[" << remote_ip << ":" << remote_port << "] says: "
+        std::cout << "[" << message.sender_ip << ":" << message.sender_port << "] says: "
             << message.text << "\n";
     }
 }

@@ -26,6 +26,8 @@
 struct Message
 {
     char text[MESSAGE_SIZE];
+    char sender_ip[80];
+    int sender_port;
 };
 
 class Socket
