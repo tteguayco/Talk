@@ -33,9 +33,6 @@ int send_message_to_clients(int fd, const Message& message,
     unsigned i = 0;
     int result = 0;
 
-    std::cout << "Message's sender ip: " << message.sender_ip << '\n';
-    std::cout << "Message's sender port: " << message.sender_port << '\n';
-
     while ((i < clients_list->size()) && (result >= 0))
     {
         // The sender won't receive its own message
