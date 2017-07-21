@@ -1,12 +1,13 @@
 #include "client.h"
 
 Client::Client(const std::string& server_ip_address, int server_port,
-               bool is_server):
+               bool is_server, std::string username):
     socket_(NULL),
     server_ip_address_(server_ip_address),
     server_port_(server_port),
     is_server_(is_server),
-    clients_list_()
+    clients_list_(),
+    username_(username)
 {}
 
 Client::~Client()
@@ -39,7 +40,7 @@ void Client::run()
 
     // Run threads to send and receive messages
     std::thread send_thread(&Socket::send_to, socket_,
-        std::ref(remote_address), std::ref(quit), clients_list);
+        std::ref(remote_address), std::ref(quit), clients_list, username_);
     std::thread receive_thread(&Socket::receive_from, socket_,
         std::ref(remote_address), std::ref(quit), clients_list);
 

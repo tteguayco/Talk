@@ -53,7 +53,8 @@ int send_message_to_clients(int fd, const Message& message,
 }
 
 void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
-                     std::vector<std::pair<std::string, int>>* clients_list)
+                     std::vector<std::pair<std::string, int>>* clients_list,
+                     std::string sender_username)
 {
     std::string line;
     Message message;
@@ -79,7 +80,7 @@ void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
 
         // Clean memory for the message
         memset(message.text, '\0', sizeof(message.text));
-        //memset(message.sender_ip, '\0', sizeof(message.sender_ip));
+        memset(message.sender_username, '\0', sizeof(message.sender_username));
 
         // Set up message
         sender_ip = inet_ntoa(local_address.sin_addr);
@@ -87,6 +88,7 @@ void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
         line.copy(message.text, sizeof(message.text) - 1, 0);
         strncpy(message.sender_ip, sender_ip, sizeof (message.sender_ip));
         memcpy(&message.sender_port, &sender_port, sizeof(int));
+        strcpy(message.sender_username, sender_username.c_str());
 
         // Send message through socket to all the clients
         if (clients_list != NULL)
@@ -150,8 +152,8 @@ void Socket::receive_from(sockaddr_in& address, std::atomic_bool& quit,
         }
 
         // Print message
-        std::cout << "[" << message.sender_ip << ":" << message.sender_port << "] says: "
-            << message.text << "\n";
+        std::cout << message.sender_username << " [" << message.sender_ip << ":"
+            << message.sender_port << "] says: " << message.text << "\n";
     }
 }
 

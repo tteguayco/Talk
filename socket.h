@@ -28,6 +28,7 @@ struct Message
     char text[MESSAGE_SIZE];
     char sender_ip[80];
     int sender_port;
+    char sender_username[80];
 };
 
 class Socket
@@ -39,7 +40,8 @@ public:
     Socket(const sockaddr_in& address);
     ~Socket();
     void send_to(const sockaddr_in& address, std::atomic_bool& quit,
-                std::vector<std::pair<std::string, int>>* clients_list);
+                std::vector<std::pair<std::string, int>>* clients_list,
+                std::string sender_username);
     void receive_from(sockaddr_in& address, std::atomic_bool& quit,
                 std::vector<std::pair<std::string, int>>* clients_list);
     static sockaddr_in make_ip_address(const std::string ip_address, int port);
