@@ -63,6 +63,8 @@ void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
     int result = 0;
     int sender_port;
     char* sender_ip;
+    std::time_t time = std::time(nullptr);
+    char* time_str;
 
     // Getting the local address
     sockaddr_in local_address;
@@ -86,6 +88,7 @@ void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
             // Clean memory for the message
             memset(message.text, '\0', sizeof(message.text));
             memset(message.sender_username, '\0', sizeof(message.sender_username));
+            memset(message.sending_date, '\0', sizeof(message.sending_date));
 
             // Set up message
             sender_ip = inet_ntoa(local_address.sin_addr);
@@ -94,6 +97,12 @@ void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
             strncpy(message.sender_ip, sender_ip, sizeof (message.sender_ip));
             memcpy(&message.sender_port, &sender_port, sizeof(int));
             strcpy(message.sender_username, sender_username.c_str());
+
+            // Get sending date and time
+            time_str = std::asctime(std::localtime(&time));
+            strcpy(message.sending_date, time_str);
+            // Delete undesirable break line
+            message.sending_date[strlen(time_str) - 1] = '\0';
 
             // Send message through socket to all the clients
             if (clients_list != NULL)

@@ -5,6 +5,8 @@ History::History(const std::string& username)
     std::string home_dir = getenv("HOME");
     std::string pathname = home_dir + "/.talk/" + username + ".log";
     int result;
+
+    // 0600 -> read and write permissions
     int mode = 0600;
 
     // Opens the file for writting,
@@ -34,7 +36,7 @@ History::History(const std::string& username)
             "unable to map file on memory");
     }
 
-    // Lock the access to the file
+    // Lock the access to the file by several processes
     if (lockf(fd_, F_TLOCK, 0) < 0)
     {
         throw std::system_error(errno, std::system_category(),
@@ -61,8 +63,10 @@ History::~History()
 
 void History::add_message(const Message& message)
 {
-    std::string line = std::string(message.sender_username) + ": " +
+    std::string line = std::string(message.sender_username) + " [" +
+            std::string(message.sending_date) + "]: " +
             std::string(message.text) + '\n';
+    std::lock_guard<std::mutex> lock(mutex_);
 
     int num_bytes = line.copy(mapping_address_, line.length(), 0);
     mapping_address_ += num_bytes;

@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <mutex>
 
 #define MESSAGE_SIZE 1024
 #define FILE_LEN 1000000
@@ -21,6 +22,7 @@ struct Message
     char sender_ip[80];
     int sender_port;
     char sender_username[80];
+    char sending_date[80];
 };
 
 class History
@@ -29,6 +31,7 @@ private:
     int fd_;
     char* mapping_address_;
     std::string username_;
+    std::mutex mutex_;
 
 public:
     History(const std::string& username);
