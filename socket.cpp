@@ -27,11 +27,13 @@ Socket::~Socket()
 }
 
 int send_message_to_clients(int fd, const Message& message,
-                        std::vector<std::pair<std::string, int>>* clients_list)
+                        std::vector<std::pair<std::string, int>>* clients_list,
+                        std::mutex& mutex)
 {
     sockaddr_in aux_address;
     unsigned i = 0;
     int result = 0;
+    std::lock_guard<std::mutex> lock(mutex);
 
     while ((i < clients_list->size()) && (result >= 0))
     {
@@ -54,7 +56,7 @@ int send_message_to_clients(int fd, const Message& message,
 
 void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
                      std::vector<std::pair<std::string, int>>* clients_list,
-                     std::string sender_username)
+                     std::string sender_username, History& history)
 {
     std::string line;
     Message message;
@@ -78,39 +80,47 @@ void Socket::send_to(const sockaddr_in& address, std::atomic_bool& quit,
             break;
         }
 
-        // Clean memory for the message
-        memset(message.text, '\0', sizeof(message.text));
-        memset(message.sender_username, '\0', sizeof(message.sender_username));
-
-        // Set up message
-        sender_ip = inet_ntoa(local_address.sin_addr);
-        sender_port = ntohs(local_address.sin_port);
-        line.copy(message.text, sizeof(message.text) - 1, 0);
-        strncpy(message.sender_ip, sender_ip, sizeof (message.sender_ip));
-        memcpy(&message.sender_port, &sender_port, sizeof(int));
-        strcpy(message.sender_username, sender_username.c_str());
-
-        // Send message through socket to all the clients
-        if (clients_list != NULL)
+        // Empty messages won't be sent
+        if (!line.empty())
         {
-            result = send_message_to_clients(fd_, message, clients_list);
-        }
-        else
-        {
-            result = sendto(fd_, &message, sizeof(message), 0,
-                (const sockaddr*) &address, sizeof(address));
-        }
+            // Clean memory for the message
+            memset(message.text, '\0', sizeof(message.text));
+            memset(message.sender_username, '\0', sizeof(message.sender_username));
 
-        if (result < 0)
-        {
-            throw std::system_error(errno, std::system_category(),
-                "call to sento() function failed");
+            // Set up message
+            sender_ip = inet_ntoa(local_address.sin_addr);
+            sender_port = ntohs(local_address.sin_port);
+            line.copy(message.text, sizeof(message.text) - 1, 0);
+            strncpy(message.sender_ip, sender_ip, sizeof (message.sender_ip));
+            memcpy(&message.sender_port, &sender_port, sizeof(int));
+            strcpy(message.sender_username, sender_username.c_str());
+
+            // Send message through socket to all the clients
+            if (clients_list != NULL)
+            {
+                result = send_message_to_clients(fd_, message, clients_list, mutex_);
+            }
+            else
+            {
+                result = sendto(fd_, &message, sizeof(message), 0,
+                    (const sockaddr*) &address, sizeof(address));
+            }
+
+            if (result < 0)
+            {
+                throw std::system_error(errno, std::system_category(),
+                    "call to sento() function failed");
+            }
+
+            // Save message in history
+            history.add_message(message);
         }
     }
 }
 
 void Socket::receive_from(sockaddr_in& address, std::atomic_bool& quit,
-                          std::vector<std::pair<std::string, int>>* clients_list)
+                          std::vector<std::pair<std::string, int>>* clients_list,
+                          History& history)
 {
     Message message;
     socklen_t src_len = sizeof(address);
@@ -139,17 +149,24 @@ void Socket::receive_from(sockaddr_in& address, std::atomic_bool& quit,
             memcpy(&message.sender_port, &remote_port, sizeof(int));
 
             // Send message to all the clients, but the original sender
-            send_message_to_clients(fd_, message, clients_list);
+            send_message_to_clients(fd_, message, clients_list, mutex_);
 
-            // If that client is not added yet
-            if (!std::any_of(clients_list->begin(), clients_list->end(),
-                [&remote_ip, &remote_port] (const std::pair<std::string, int>& p)
-                    { return p.first == remote_ip && p.second == remote_port; }))
             {
-                std::string remote_ip_str(remote_ip);
-                clients_list->push_back(std::make_pair(remote_ip_str, remote_port));
+                std::lock_guard<std::mutex> lock(mutex_);
+
+                // If that client is not added yet
+                if (!std::any_of(clients_list->begin(), clients_list->end(),
+                    [&remote_ip, &remote_port] (const std::pair<std::string, int>& p)
+                        { return p.first == remote_ip && p.second == remote_port; }))
+                {
+                    std::string remote_ip_str(remote_ip);
+                    clients_list->push_back(std::make_pair(remote_ip_str, remote_port));
+                }
             }
         }
+
+        // Save message in history
+        history.add_message(message);
 
         // Print message
         std::cout << message.sender_username << " [" << message.sender_ip << ":"

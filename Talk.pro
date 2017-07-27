@@ -5,10 +5,12 @@ CONFIG -= qt
 
 SOURCES += main.cpp \
     socket.cpp \
-    client.cpp
+    client.cpp \
+    history.cpp
 
 HEADERS += \
     socket.h \
-    client.h
+    client.h \
+    history.h
 
 unix:!macx: LIBS += -lpthread-2.23

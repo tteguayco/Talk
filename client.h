@@ -27,10 +27,11 @@ private:
     std::vector<std::pair<std::string, int>> clients_list_;
 
     std::string username_;
+    History history_;
 
 public:
     Client(const std::string& server_ip_address, int server_port, bool is_server,
-           std::string username);
+           std::string& username);
     ~Client();
     void run();
 

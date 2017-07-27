@@ -13,6 +13,9 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <mutex>
+
+#include "history.h"
 
 #define domain AF_INET
 #define type SOCK_DGRAM
@@ -21,29 +24,21 @@
 #define SOCKET_CREATION_FAILED 2
 #define BIND_FAILED 3
 
-#define MESSAGE_SIZE 1024
-
-struct Message
-{
-    char text[MESSAGE_SIZE];
-    char sender_ip[80];
-    int sender_port;
-    char sender_username[80];
-};
-
 class Socket
 {
 private:
     int fd_;
+    std::mutex mutex_;
 
 public:
     Socket(const sockaddr_in& address);
     ~Socket();
     void send_to(const sockaddr_in& address, std::atomic_bool& quit,
                 std::vector<std::pair<std::string, int>>* clients_list,
-                std::string sender_username);
+                std::string sender_username, History& history);
     void receive_from(sockaddr_in& address, std::atomic_bool& quit,
-                std::vector<std::pair<std::string, int>>* clients_list);
+                std::vector<std::pair<std::string, int>>* clients_list,
+                History& history);
     static sockaddr_in make_ip_address(const std::string ip_address, int port);
 };
 

@@ -89,12 +89,10 @@ int main(int argc, char *argv[])
             std::cout << "TALK";
             if (client_mode)
             {
-                std::cout << "\n\n> ";
                 client = new Client(remote_server_ip, remote_server_port, false, username);
             }
             else if (server_mode)
             {
-                std::cout << " (server mode)\n\n> ";
                 client = new Client(remote_server_ip, remote_server_port, true, username);
             }
 
